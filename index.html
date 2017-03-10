@@ -105,7 +105,13 @@
 
     <div id="container">
       <div id="sidebar">
-        
+        <h5>Filter the map for a specific complaint type</h5>
+        <button class="btn btn-lg taxi-complaints">Taxi Complaints</button>
+
+        <button class="btn btn-xs btn-danger reset">Reset</button>
+
+        <div id="details">
+        </div>
       </div>
       <div id="map">
       </div>
@@ -118,23 +124,74 @@
     <script>
 
     var map = new L.Map('map', { 
-      center: [40.1,-100.3],
-      zoom: 4
+      center: [40.712866,-74.006417],
+      zoom: 15
     });
 
     L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
     }).addTo(map);
 
-    var layerUrl = 'http://documentation.cartodb.com/api/v2/viz/236085de-ea08-11e2-958c-5404a6a683d5/viz.json';
+    var layerUrl = 'https://cwhong.carto.com/api/v2/viz/0dd8fc54-0526-11e7-98ea-0e3ebc282e83/viz.json';
 
     cartodb.createLayer(map, layerUrl)
       .addTo(map)
       .on('done', function(layer) {
 
+        // get our lone sublayer from the carto layer object
+        var tlc_311_complaints = layer.getSubLayer(0);
+
+        // event listeners to change the SQL for the carto layer
+        $('.taxi-complaints').on('click', function() {
+
+          tlc_311_complaints.setSQL('SELECT the_geom, the_geom_webmercator, agency, agency_nam, complaint_, descriptor FROM table_311_1 WHERE agency = \'TLC\' AND complaint_ = \'Taxi Complaint\'');
+        });
+
+        $('.reset').on('click', function() {
+
+
+          tlc_311_complaints.setSQL('SELECT the_geom, the_geom_webmercator, agency, agency_nam, complaint_, descriptor FROM table_311_1 WHERE agency = \'TLC\'');
+        });
+
+        // set interactivity
+        tlc_311_complaints.setInteraction(true);
+        tlc_311_complaints.setInteractivity('complaint_, descriptor');
+
+        // Interactivity for this layer
+        tlc_311_complaints.on('featureClick', function(e, latlng, pos, data, layerNumber) {
+          $('#details').empty();
+          $('#details').append('Complaint Type: ' + data.complaint_ + '<br/>')
+          $('#details').append('Descriptor: ' + data.descriptor)
+        });
+
+
       }).on('error', function() {
         //log the error
       });
+
+
+    // Use the SQL API to get raw data from carto
+
+    var apiCall = 'https://cwhong.carto.com/api/v2/sql?q=SELECT%20*%20FROM%20table_311_1%20WHERE%20cartodb_id=1'
+
+    $.getJSON(apiCall, function(data) {
+      console.log(data);
+    })
+
+    // geojson API CALL
+
+    var geojsonApiCall = 'https://cwhong.carto.com/api/v2/sql?q=SELECT%20*%20FROM%20table_311_1%20WHERE%20cartodb_id=1&format=geojson';
+
+    $.getJSON(geojsonApiCall, function(data) {
+      console.log(data);
+
+      L.geoJson(data).addTo(map);
+    });
+
+
+    
+
+      
 
     </script>
   </body>
